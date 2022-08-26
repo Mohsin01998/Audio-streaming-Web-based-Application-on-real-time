@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+<!--    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>-->
+<!--    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.4/socket.io.js" integrity="sha512-aMGMvNYu8Ue4G+fHa359jcPb1u+ytAF+P2SCb+PxrjCdO3n3ZTxJ30zuH39rimUggmTwmh2u7wvQsDTHESnmfQ==" crossorigin="anonymous"></script>-->
+<!--    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>-->
+  </head>
+  <body>
+    <div class="container">
+      <h1>VOICE RECORDING APP</h1>
+      <span>Recorder</span>
+      <audio id="recorder" muted></audio>
+      <div>
+        <button id="start">Record</button>
+        <button id="stop">Stop Recording</button>
+      </div>
+      <br />
+      <audio id="player" controls></audio>
+    </div>
+    <script>
+      // const log = (text, color) => {
+//     document.getElementById('log').innerHTML += `<span style="color: ${color}">${text}</span><br>`;
+// };
+//
+// const socket = new WebSocket('ws://' + location.host + '/echo');
+// socket.addEventListener('message', ev => {
+//     log('<<< ' + ev.data, 'blue');
+// });
+// document.getElementById('form').onsubmit = ev => {
+//     ev.preventDefault();
+//     const textField = document.getElementById('text');
+//     log('>>> ' + textField.value, 'red');ssss
+//     socket.send(textField.value);
+//     textField.value = '';
+// };
+
+
+
+class VoiceRecorder {
+    constructor() {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            console.log(" Get User media supported")
+        } else {
+            console.log("Get user medua NOT supported")
+        }
+
+        this.mediaRecorder
+        this.stream
+        this.chunks = []
+        this.isRecording = false
+
+        this.recorderRef = document.querySelector("#recorder")
+        this.playerRef = document.querySelector("#player")
+        this.startRef = document.querySelector("#start")
+        this.stopRef = document.querySelector("#stop")
+
+        this.startRef.onclick = this.startRecording.bind(this);
+        this.stopRef.onclick = this.stopRecording.bind(this);
+
+        this.constraints = {
+            audio: true,
+            video: false
+        }
+    }
+
+    // Handle sucees
+    handleSucess(stream) {
+        this.stream = stream
+        this.stream.oninactive = () => {
+            console.log("stream ended");
+        }
+
+        this.recorderRef.srcObject = this.stream
+        this.mediaRecorder = new MediaRecorder(this.stream)
+        this.mediaRecorder.ondataavailable = this.onMediaRecorderDataAvailable.bind(this)
+        this.mediaRecorder.onstop = this.onMediaRecorderStop.bind(this)
+        this.recorderRef.play();
+        this.mediaRecorder.start();
+    }
+
+    onMediaRecorderDataAvailable(e) { this.chunks.push(e.data) }
+
+onMediaRecorderStop(e) {
+    var ws = new WebSocket("ws://localhost:8000/ws");
+    var blob = new Blob(this.chunks, { 'type': 'audio/wav; codesc=opus' });
+    // var blob = new Blob(this.chunks, {  type: recorder.mimeType });
+    var audioURL = window.URL.createObjectURL(blob);
+    this.playerRef.src = audioURL;
+    this.chunks = []
+    this.stream.getAudioTracks().forEach(track => track.stop());
+    this.stream = null
+<!--    console.log(blob)-->
+    var file_data;
+<!--    file_data.append(blob)-->
+<!--    console.log(file_data)-->
+    var formData = new FormData()
+    formData.append('audio_file',blob)
+<!--    console.log(formData)-->
+<!--    var ws = new WebSocket("ws://localhost:8000/ws");-->
+    ws.onopen= function(){
+<!--    ws.send("connected to js");-->
+    console.log("connected")
+    ws.send(blob)
+    console.log("file sent")
+    };
+    };
+
+
+//        var socket = io("http://127.0.0.1:5000/");
+//        socket.on('connect', function() {
+//        console.log("connected")});
+//        socket.emit('my event', formData);
+//        console.log("file sent")
+
+
+
+
+
+
+
+// Create Formdata object then use socket.io
+
+
+
+
+
+
+
+// Create Formdata object then use websocket
+
+
+
+//
+
+
+// Send file via XMLHTTPRequest()
+
+//
+//         var request = new XMLHttpRequest();
+//         request.open("POST", "http://127.0.0.1:5000/upload");
+//         request.send(formData);
+//         console.log("files are uploaded and stored")
+
+
+
+
+
+
+
+    // start Recording
+
+    startRecording() {
+        if (this.isRecording) return
+        this.isRecording = true
+        this.startRef.innerHTML = "Recording..."
+        this.playerRef.src = " ";
+        navigator.mediaDevices.getUserMedia(this.constraints)
+            .then(this.handleSucess.bind(this))
+            .catch(this.handleSucess.bind(this))
+    }
+
+    // stop Recording
+
+    stopRecording() {
+        if (!this.isRecording) return
+        this.isRecording = false
+        this.startRef.innerHTML = "Record"
+        this.recorderRef.pause();
+        this.mediaRecorder.stop();
+
+    }
+
+
+}
+
+
+
+window.VoiceRecorder = new VoiceRecorder();
+
+    </script>
+  </body>
+</html>
